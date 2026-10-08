@@ -4,7 +4,7 @@ window.TERMINAL_CONFIG = {
   host: 'edville',
 
   whoami: 'Altynkhan Sardar, Developer, Student',
-  pwd: 'Edville International school',
+  pwd: 'Edville International School',
 
   // GitHub account the Projects/ folder and READMEs are pulled from.
   github: 'forge-sa',
@@ -20,6 +20,7 @@ window.TERMINAL_CONFIG = {
     { name: 'remotefetch-lavis', branch: 'master' },
     { name: 'six-seven-charge-tgbot', branch: 'main' },
     { name: 'villager-discount-cap', branch: 'main' },
+    { name: 'RetroTermWeb', branch: 'main' },
   ],
 
   // Files in Pictures/. Drop images into ./pictures and list them here.
