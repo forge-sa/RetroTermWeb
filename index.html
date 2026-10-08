@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>altynkhan@edville: ~</title>
+  <meta name="description" content="Altynkhan Sardar — Developer, Student. A retro terminal.">
+  <meta name="theme-color" content="#050805">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bezel">
+    <div class="crt" id="crt">
+      <div class="screen" id="screen">
+        <div id="output" aria-live="polite"></div>
+        <div id="prompt-line" class="line" hidden><span id="prompt"></span><span id="before"></span><span id="cursor">&nbsp;</span><span id="after"></span></div>
+        <noscript><div class="line">bash: javascript: command not found<br>This terminal needs JavaScript enabled.</div></noscript>
+      </div>
+      <div class="fx scanlines"></div>
+      <div class="fx noise"></div>
+      <div class="fx roll"></div>
+      <div class="fx flicker"></div>
+      <div class="fx vignette"></div>
+      <div class="fx glass"></div>
+    </div>
+  </div>
+
+  <input id="input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Terminal input">
+
+  <script src="config.js"></script>
+  <script src="terminal.js"></script>
+</body>
+</html>
