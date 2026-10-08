@@ -19,6 +19,8 @@ window.TERMINAL_CONFIG = {
     { name: 'noporkplugin', branch: 'main' },
     { name: 'remotefetch-lavis', branch: 'master' },
     { name: 'six-seven-charge-tgbot', branch: 'main' },
+    { name: 'six-seven-charge-tgbot-win', branch: 'main' },
+    { name: 'six-seven-charge-tgbot-mac', branch: 'main' },
     { name: 'villager-discount-cap', branch: 'main' },
     { name: 'RetroTermWeb', branch: 'main' },
   ],
