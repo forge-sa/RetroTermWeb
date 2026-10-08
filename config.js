@@ -29,6 +29,7 @@ window.TERMINAL_CONFIG = {
   // `src` can also be a full https:// URL.
   pictures: [
     { name: 'avatar.jpg', src: 'pictures/avatar.jpg', size: '19K' },
+    { name: 'lavis.png', src: 'pictures/lavis.png', size: '19K' },
   ],
 
   // green | amber | white
