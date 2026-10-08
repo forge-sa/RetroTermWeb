@@ -30,6 +30,7 @@ window.TERMINAL_CONFIG = {
   pictures: [
     { name: 'avatar.jpg', src: 'pictures/avatar.jpg', size: '19K' },
     { name: 'lavis.png', src: 'pictures/lavis.png', size: '19K' },
+    { name: 'nixos.jpg', src: 'pictures/nixos.jpg', size: '19K' },
   ],
 
   // green | amber | white
