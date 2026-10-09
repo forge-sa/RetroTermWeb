@@ -17,6 +17,7 @@
       <div class="screen" id="screen">
         <div id="output" aria-live="polite"></div>
         <div id="prompt-line" class="line" hidden><span id="prompt"></span><span id="before"></span><span id="cursor">&nbsp;</span><span id="after"></span></div>
+        <div id="game" hidden></div>
         <noscript><div class="line">bash: javascript: command not found<br>This terminal needs JavaScript enabled.</div></noscript>
       </div>
       <div class="fx scanlines"></div>
@@ -31,6 +32,7 @@
   <input id="input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Terminal input">
 
   <script src="config.js"></script>
+  <script src="games.js"></script>
   <script src="terminal.js"></script>
 </body>
 </html>

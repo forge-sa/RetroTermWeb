@@ -233,6 +233,7 @@ a:hover { color: var(--hi); background: var(--faint); }
 .entry:hover { background: var(--faint); color: var(--hi); }
 .entry.dir { color: var(--hi); font-weight: bold; }
 .entry.img { font-style: italic; }
+.entry.exec { color: var(--hi); }
 .click { cursor: pointer; }
 .click:hover { background: var(--faint); color: var(--hi); }
 
@@ -304,11 +305,62 @@ a:hover { color: var(--hi); background: var(--faint); }
 .fetch pre + pre { color: inherit; min-width: 0; flex: 1 1 22ch; }
 .swatch { display: inline-block; width: 3ch; height: 1em; vertical-align: middle; background: var(--fg); }
 
+/* ---------- games: a character grid on the "alternate screen" ---------- */
+.screen.alt { overflow: hidden; cursor: default; }
+/* Moving overlays force a full-screen repaint every frame; hold them still while a game redraws. */
+.crt.gaming .noise, .crt.gaming .roll, .crt.gaming .flicker { animation-play-state: paused; }
+#game { height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.g-wrap { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6em; }
+.g-grid { flex: none; line-height: 1; white-space: pre; }
+.g-row { display: flex; height: 1em; }
+.g-c { flex: none; width: calc(var(--cw, 2) * 1ch); height: 1em; line-height: 1; text-align: center; overflow: hidden; }
+.g-hint { color: var(--dim); font-size: 0.8em; text-align: center; white-space: pre-wrap; }
+.g-hint:empty, .g-pad:empty { display: none; }
+.g-pad { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4em; }
+.g-btn {
+  font: inherit;
+  color: var(--fg);
+  text-shadow: inherit;
+  background: var(--faint);
+  border: 1px solid rgba(var(--fg-rgb), 0.45);
+  border-radius: 6px;
+  min-width: 2.2em;
+  min-height: 2.2em;
+  padding: 0 0.5em;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.g-btn:active { background: rgba(var(--fg-rgb), 0.3); }
+
+.g-c.d, .g-c.dot { color: var(--dim); }
+.g-c.dd { color: rgba(var(--fg-rgb), 0.3); }
+.g-c.h, .g-c.blk, .g-c.pac { color: var(--hi); }
+.g-c.inv, .g-c.cur, .g-c.snk-head, .g-c.ghost {
+  background: var(--fg);
+  color: var(--bg-edge);
+  text-shadow: none;
+  box-shadow: 0 0 8px var(--glow);
+}
+.g-c.snk-head { background: var(--hi); }
+.g-c.snk, .g-c.pipe-cap { background: var(--fg); box-shadow: 0 0 6px var(--glow); }
+.g-c.wall { background: rgba(var(--fg-rgb), 0.22); }
+.g-c.wall-hi { background: var(--hi); box-shadow: 0 0 10px var(--glow); }
+.g-c.ghost, .g-c.ghost-f { border-radius: 50% 50% 0 0; }
+.g-c.ghost-f { background: rgba(var(--fg-rgb), 0.35); color: var(--bg-edge); text-shadow: none; }
+.g-c.food, .g-c.pow { color: var(--hi); animation: g-pulse 0.8s steps(1) infinite; }
+.g-c.ms-h, .g-c.ms-f { background: rgba(var(--fg-rgb), 0.2); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6); }
+.g-c.ms-f { color: var(--hi); }
+.g-c.cur { background: var(--hi); }
+.g-c.pipe { background: rgba(var(--fg-rgb), 0.55); }
+.g-c.pipe-hl { background: rgba(var(--fg-rgb), 0.8); }
+.g-c.ground { background: rgba(var(--fg-rgb), 0.5); }
+@keyframes g-pulse { 50% { opacity: 0.25; } }
+
 @media (max-width: 600px) {
   .bezel { padding: 0; }
   .crt { border-radius: 0; box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .noise, .roll, .flicker, #cursor, .pic.reveal, .crt.booting .screen { animation: none; }
+  .noise, .roll, .flicker, #cursor, .pic.reveal, .crt.booting .screen, .g-c { animation: none; }
 }

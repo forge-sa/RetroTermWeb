@@ -16,6 +16,7 @@
   const cursorEl = $('cursor');
   const afterEl = $('after');
   const input = $('input');
+  const gameHost = $('game');
 
   // ---------------------------------------------------------------- storage
 
@@ -88,6 +89,9 @@
   for (const p of C.pictures || []) {
     picturesNode.children[p.name] = { type: 'image', src: p.src, size: p.size };
   }
+
+  const gamesNode = (homeNode.children.Games = dir());
+  for (const game of window.RetroGames?.list || []) gamesNode.children[game.file] = { type: 'script', ...game };
 
   let cwd = [...HOME];
   let oldCwd = [...HOME];
@@ -482,12 +486,13 @@
   // ls entries remember where they point, so clicking them still works after a cd.
   function entryCommand(el) {
     const rel = shellQuote(relPath(resolve(el.dataset.path)));
+    if (el.dataset.kind === 'exec') return rel.includes('/') ? rel : `./${rel}`;
     if (el.dataset.kind !== 'dir') return `cat ${rel}`;
     return rel === '.' ? 'ls' : `cd ${rel} && ls`;
   }
 
   function entryHTML(name, node, path) {
-    const kind = node.type === 'dir' ? 'dir' : node.type === 'image' ? 'img' : 'file';
+    const kind = { dir: 'dir', image: 'img', script: 'exec' }[node.type] || 'file';
     const label = name + (node.type === 'dir' ? '/' : '');
     return `<span class="entry ${kind}" data-kind="${kind}" data-path="${esc(displayPath(resolve(path)))}">${esc(label)}</span>`;
   }
@@ -506,6 +511,7 @@
       when = date(node.repo.pushed);
       desc = node.repo.description || '';
     } else if (node.type === 'image') size = node.size || '-';
+    else if (node.type === 'script') { perms = '-rwxr-xr-x'; size = node.size; desc = node.about; }
     const meta = `${perms} 1 ${pad(C.user, 9)} ${pad(group, 10)} ${size.padStart(5)} ${when}  `;
     // keep each entry on one line: trim the description to whatever room is left
     const room = cols - [...meta].length - [...name].length - 4;
@@ -535,6 +541,8 @@
         print();
         printText('Tab completes names, Up/Down walks history, Ctrl+C cancels, Ctrl+L clears.', 'dim');
         printText('Click any name in ls output to open it.', 'dim');
+        print();
+        print(`Games: <span class="click" data-cmd="ls ~/Games">ls ~/Games</span>, then run one, e.g. <span class="click" data-cmd="~/Games/tetris.sh">~/Games/tetris.sh</span>`);
       },
     },
 
@@ -616,6 +624,20 @@
           try { ({ node } = lookup('cat', path)); } catch (e) { printErr(e.message); status = 1; continue; }
 
           if (node.type === 'dir') { printErr(`cat: ${path}: Is a directory`); status = 1; continue; }
+
+          if (node.type === 'script') {
+            const src = [
+              '#!/usr/bin/env bash',
+              `# ${node.file} - ${node.about}`,
+              `# keys: ${node.keys}, p pause, q quit`,
+              '',
+              'set -euo pipefail',
+              `exec /usr/games/${node.game} --phosphor "$@"`,
+            ];
+            const html = src.map((l) => (l.startsWith('#') ? `<span class="dim">${esc(l)}</span>` : esc(l))).join('\n');
+            print(`<div class="md-code"><pre>${html}</pre></div>`).classList.remove('line');
+            continue;
+          }
 
           if (node.type === 'repo') {
             const { repo } = node;
@@ -748,6 +770,8 @@
     },
 
     // undocumented
+    bash: { run: runScriptCommand },
+    sh: { run: runScriptCommand },
     sudo: { run() { printErr(`${C.user} is not in the sudoers file. This incident will be reported.`); return 1; } },
     exit: { run() { printText('logout'); printText('There is no escape. Type help instead.', 'dim'); } },
     rm: { run() { printErr('rm: permission denied: this is a read-only museum'); return 1; } },
@@ -791,8 +815,14 @@
     for (const { argv, op } of parseLine(line)) {
       if ((op === '&&' && status !== 0) || (op === '||' && status === 0)) continue;
       const [name, ...args] = argv;
+      if (name.includes('/')) {
+        status = await execFile(name, signal);
+        continue;
+      }
       if (!Object.hasOwn(commands, name)) {
         printErr(`${name}: command not found`);
+        const hint = commandHint(name);
+        if (hint) print(hint, 'dim');
         status = 127;
         continue;
       }
@@ -804,6 +834,56 @@
         status = 1;
       }
     }
+  }
+
+  // ---------------------------------------------------------------- games
+
+  async function execFile(path, signal) {
+    await abortable(projectsReady, signal);
+    const node = nodeAt(resolve(path));
+    if (!node) { printErr(`rsh: ${path}: No such file or directory`); return 127; }
+    if (node.type === 'dir') { printErr(`rsh: ${path}: Is a directory`); return 126; }
+    if (node.type !== 'script') { printErr(`rsh: ${path}: Permission denied`); return 126; }
+    return runGame(node.game, signal);
+  }
+
+  function runScriptCommand(args, { signal }) {
+    if (!args.length) {
+      printText('rsh 1.0: already running. Try: bash Games/snake.sh', 'dim');
+      return 0;
+    }
+    return execFile(args[0], signal);
+  }
+
+  // Typing `tetris.sh` or `tetris` like a command gets a nudge toward the real path.
+  function commandHint(name) {
+    const game = (window.RetroGames?.list || []).find((g) => g.file === name || g.game === name);
+    if (!game) return null;
+    const segs = [...HOME, 'Games', game.file];
+    const rel = relPath(segs);
+    const cmd = rel.includes('/') ? rel : `./${rel}`;
+    return `did you mean <span class="click" data-cmd="${esc(cmd)}">${esc(cmd)}</span>?`;
+  }
+
+  // Games take over the screen like vim or less do, and hand it back on exit.
+  async function runGame(game, signal) {
+    out.hidden = true;
+    gameHost.hidden = false;
+    screen.classList.add('alt');
+    crt.classList.add('gaming');
+    screen.scrollTop = 0;
+    if (COARSE_POINTER) input.blur();
+    let summary;
+    try {
+      summary = await window.RetroGames.play(game, gameHost, { signal, coarse: COARSE_POINTER, store });
+    } finally {
+      gameHost.hidden = true;
+      out.hidden = false;
+      screen.classList.remove('alt');
+      crt.classList.remove('gaming');
+    }
+    if (summary) printText(summary, 'dim');
+    return 0;
   }
 
   // ---------------------------------------------------------------- prompt & input
@@ -906,7 +986,7 @@
     const before = v.slice(0, s);
     const word = before.match(/(\S*)$/)[1];
     const head = before.slice(0, before.length - word.length);
-    const isCommand = /^\s*$|(;|&&|\|\|)\s*$/.test(head);
+    const isCommand = /^\s*$|(;|&&|\|\|)\s*$/.test(head) && !word.includes('/');
 
     let candidates;
     if (isCommand) {
@@ -1012,6 +1092,7 @@
   }
 
   screen.addEventListener('click', (e) => {
+    if (!gameHost.hidden) return;
     const entry = e.target.closest('[data-path]');
     if (entry) { typeAndRun(entryCommand(entry)); return; }
     const target = e.target.closest('[data-cmd]');
