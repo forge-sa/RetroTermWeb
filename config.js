@@ -1,7 +1,7 @@
 // Everything personal lives here. Edit freely, no build step needed.
 window.TERMINAL_CONFIG = {
-  user: 'altynkhan',
-  host: 'edville',
+  user: 'sardar',
+  host: 'altynkhan',
 
   whoami: 'Altynkhan Sardar, Developer, Student',
   pwd: 'Edville International School',
