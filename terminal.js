@@ -90,6 +90,20 @@
     picturesNode.children[p.name] = { type: 'image', src: p.src, size: p.size };
   }
 
+  const apple = (C.pictures || []).find((p) => p.name === 'apple.png');
+  if (apple) {
+    picturesNode.children['apple_rotate.sh'] = {
+      type: 'script', file: 'apple_rotate.sh', size: '0.2K', about: 'nine rotating apples',
+      source: [
+        'for i in {0..8}; do',
+        '  spin --phase $((i * 40)) --phosphor ~/Pictures/apple.png &',
+        'done',
+        'wait',
+      ],
+      run: (signal) => rotateApples(apple.src, signal),
+    };
+  }
+
   const gamesNode = (homeNode.children.Games = dir());
   for (const game of window.RetroGames?.list || []) gamesNode.children[game.file] = { type: 'script', ...game };
 
@@ -629,10 +643,10 @@
             const src = [
               '#!/usr/bin/env bash',
               `# ${node.file} - ${node.about}`,
-              `# keys: ${node.keys}, p pause, q quit`,
+              ...(node.keys ? [`# keys: ${node.keys}, p pause, q quit`] : []),
               '',
               'set -euo pipefail',
-              `exec /usr/games/${node.game} --phosphor "$@"`,
+              ...(node.source || [`exec /usr/games/${node.game} --phosphor "$@"`]),
             ];
             const html = src.map((l) => (l.startsWith('#') ? `<span class="dim">${esc(l)}</span>` : esc(l))).join('\n');
             print(`<div class="md-code"><pre>${html}</pre></div>`).classList.remove('line');
@@ -844,7 +858,7 @@
     if (!node) { printErr(`rsh: ${path}: No such file or directory`); return 127; }
     if (node.type === 'dir') { printErr(`rsh: ${path}: Is a directory`); return 126; }
     if (node.type !== 'script') { printErr(`rsh: ${path}: Permission denied`); return 126; }
-    return runGame(node.game, signal);
+    return node.run ? node.run(signal) : runGame(node.game, signal);
   }
 
   function runScriptCommand(args, { signal }) {
@@ -857,9 +871,10 @@
 
   // Typing `tetris.sh` or `tetris` like a command gets a nudge toward the real path.
   function commandHint(name) {
-    const game = (window.RetroGames?.list || []).find((g) => g.file === name || g.game === name);
-    if (!game) return null;
-    const segs = [...HOME, 'Games', game.file];
+    const file = name.endsWith('.sh') ? name : `${name}.sh`;
+    const dir = ['Games', 'Pictures'].find((d) => homeNode.children[d].children[file]?.type === 'script');
+    if (!dir) return null;
+    const segs = [...HOME, dir, file];
     const rel = relPath(segs);
     const cmd = rel.includes('/') ? rel : `./${rel}`;
     return `did you mean <span class="click" data-cmd="${esc(cmd)}">${esc(cmd)}</span>?`;
@@ -883,6 +898,28 @@
       crt.classList.remove('gaming');
     }
     if (summary) printText(summary, 'dim');
+    return 0;
+  }
+
+  // ~/Pictures/apple_rotate.sh: a 3x3 grid of apples, each a ninth of a turn ahead of the last.
+  async function rotateApples(src, signal) {
+    const stop = spinner('decoding apple.png');
+    let img;
+    try { img = await abortable(loadImage(src), signal); }
+    catch (e) { if (e.name === 'AbortError') throw e; printErr(`apple_rotate.sh: ${e.message}`); return 1; }
+    finally { stop(); }
+    const grid = document.createElement('div');
+    grid.className = 'apples';
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'pic';
+      cell.style.setProperty('--i', i);
+      const a = img.cloneNode();
+      a.alt = `apple ${i + 1}`;
+      cell.appendChild(a);
+      grid.appendChild(cell);
+    }
+    print().appendChild(grid);
     return 0;
   }
 

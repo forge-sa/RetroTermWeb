@@ -299,6 +299,29 @@ a:hover { color: var(--hi); background: var(--faint); }
 .pic.reveal { animation: raster 1.1s steps(22, end) both; }
 @keyframes raster { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 
+/* ---------- apple_rotate.sh: padding keeps the turning apple inside the tinted box ---------- */
+.apples {
+  display: inline-grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 0.5em;
+  margin: 0.35em 0 0.1em;
+}
+.apples .pic {
+  margin: 0;
+  width: min(24vw, 140px);
+  height: min(24vw, 140px);
+  padding: min(3.6vw, 21px);
+}
+.apples .pic img {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  animation: apple-spin 3.6s linear infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+@keyframes apple-spin { to { transform: rotate(360deg); } }
+
 /* ---------- neofetch ---------- */
 .fetch { display: flex; flex-wrap: wrap; gap: 0.5em 3ch; margin: 0.3em 0; }
 .fetch pre { margin: 0; font: inherit; color: var(--hi); white-space: pre-wrap; }
@@ -363,4 +386,5 @@ a:hover { color: var(--hi); background: var(--faint); }
 
 @media (prefers-reduced-motion: reduce) {
   .noise, .roll, .flicker, #cursor, .pic.reveal, .crt.booting .screen, .g-c { animation: none; }
+  .apples .pic img { animation: none; transform: rotate(calc(var(--i) * 40deg)); }
 }
