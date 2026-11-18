@@ -6,6 +6,24 @@ window.TERMINAL_CONFIG = {
   whoami: 'Altynkhan Sardar, Developer, Student',
   pwd: 'Edville International School',
 
+  // The about card visitors see first; its "Enter the Terminal" button boots the shell.
+  // Remove this block to go straight to the terminal.
+  card: {
+    name: 'Sardar Altynkhan',
+    tagline: 'Student at Edville International School',
+    photo: 'pictures/photoofme.jpg',
+    about: [
+      'I really enjoy programming and math, especially geometry. I run NixOS on my laptop and GrapheneOS on my Pixel 10a.',
+      "I also love reading. My favourite authors are Stephen King, Ernest Hemingway, Alexandre Dumas and Agatha Christie. When I'm gaming, it's usually Minecraft, Terraria, Factorio or The Binding of Isaac: Rebirth.",
+      "I'm open to a conversation with anyone, so feel free to reach out:",
+    ],
+    contacts: [
+      { label: 'telegram', text: '@nixopsec', href: 'https://t.me/nixopsec' },
+      { label: 'email', text: 'sardar@altynkhan.com', href: 'mailto:sardar@altynkhan.com' },
+      { label: 'github', text: 'forge-sa', href: 'https://github.com/forge-sa' },
+    ],
+  },
+
   // GitHub account the Projects/ folder and READMEs are pulled from.
   github: 'forge-sa',
   includeForks: false,

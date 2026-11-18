@@ -181,6 +181,11 @@ html, body {
   70%  { transform: scale(1, 1.04); filter: brightness(1.6) blur(0.5px); }
   100% { transform: scale(1, 1); filter: blur(0.25px) contrast(1.05); }
 }
+.crt.powering-off .screen { animation: power-off 0.28s ease-in both; }
+@keyframes power-off {
+  0%   { transform: scale(1, 1); filter: blur(0.25px) contrast(1.05); }
+  100% { transform: scale(1, 0.004); filter: brightness(4) blur(1px); }
+}
 
 /* ---------- text ---------- */
 .line {
@@ -322,6 +327,96 @@ a:hover { color: var(--hi); background: var(--faint); }
 }
 @keyframes apple-spin { to { transform: rotate(360deg); } }
 
+/* ---------- about card: the first screen, before the shell boots ---------- */
+/* shrinks a little on short screens so the button stays above the fold */
+#card:not([hidden]) { display: flex; min-height: 100%; cursor: default; font-size: clamp(15px, 3.3vh, 1em); }
+.card {
+  margin: auto;
+  width: 100%;
+  max-width: 108ch;
+  border: 4px double rgba(var(--fg-rgb), 0.6);
+  box-shadow: 0 0 18px var(--glow-far), inset 0 0 30px rgba(var(--fg-rgb), 0.05);
+}
+.card-bar {
+  padding: 0 1ch;
+  background: var(--fg);
+  color: var(--bg-edge);
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "photo head" "photo about";
+  align-items: start;
+  padding: 0.9em 2.5ch 0;
+}
+.card-photo {
+  grid-area: photo;
+  width: clamp(6.5em, 16vw, 8.5em);
+  margin-right: 3ch;
+  padding: 3px;
+  border: 1px solid rgba(var(--fg-rgb), 0.5);
+  box-shadow: 0 0 14px var(--glow-far);
+}
+.card-photo .pic { display: block; margin: 0; box-shadow: none; }
+.card-photo .pic:not(.reveal) { visibility: hidden; }
+.card-photo .pic img { width: 100%; height: auto; max-height: none; aspect-ratio: 3 / 4; object-fit: cover; }
+.card-head { grid-area: head; }
+.card-head h1 { margin: 0; font: inherit; font-size: 1.7em; line-height: 1.05; color: var(--fg); }
+.card-head p { margin: 0.25em 0 0; }
+.card-about { grid-area: about; }
+.card-about p { margin: 0.6em 0 0; }
+.card-about dl { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 2ch; margin: 0.4em 0 0; }
+.card-about dd { margin: 0; overflow-wrap: anywhere; }
+
+.tw-rest { visibility: hidden; }
+.tw-caret { color: transparent; background: var(--fg); box-shadow: 0 0 8px var(--glow); }
+
+.card-foot { padding: 0.9em 2ch; text-align: center; visibility: hidden; }
+.card.done .card-foot { visibility: visible; animation: card-foot-in 0.4s steps(4, end) both; }
+@keyframes card-foot-in { from { opacity: 0; } to { opacity: 1; } }
+.card-enter {
+  font: inherit;
+  font-size: 1.3em;
+  padding: 0.15em 2ch;
+  color: var(--bg-edge);
+  background: var(--fg);
+  border: 0;
+  border-radius: 0;
+  text-shadow: none;
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--glow), 0 0 30px var(--glow-far);
+  animation: card-pulse 2.2s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-enter:hover, .card-enter:focus-visible { background: var(--hi); }
+.card-enter:focus-visible { outline: 1px dashed var(--hi); outline-offset: 5px; }
+.card-enter:active { transform: translateY(1px); }
+.card-enter-cur {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.85em;
+  margin-left: 0.5ch;
+  vertical-align: -0.08em;
+  background: currentColor;
+  animation: card-blink 1.05s steps(1) infinite;
+}
+.card-hint { display: inline-block; margin-left: 2ch; font-size: 0.8em; }
+@keyframes card-pulse { 50% { box-shadow: 0 0 18px var(--glow), 0 0 56px var(--glow); } }
+@keyframes card-blink { 50% { opacity: 0; } }
+
+@media (max-width: 640px) {
+  .card-body { grid-template-areas: "photo head" "about about"; align-items: center; padding: 0.8em 1.5ch 0; }
+  .card-photo { width: 5.5em; margin-right: 2ch; }
+  .card-head h1 { font-size: 1.35em; }
+}
+@media (pointer: coarse) {
+  .card-hint { display: none; }
+}
+
 /* ---------- neofetch ---------- */
 .fetch { display: flex; flex-wrap: wrap; gap: 0.5em 3ch; margin: 0.3em 0; }
 .fetch pre { margin: 0; font: inherit; color: var(--hi); white-space: pre-wrap; }
@@ -386,5 +481,6 @@ a:hover { color: var(--hi); background: var(--faint); }
 
 @media (prefers-reduced-motion: reduce) {
   .noise, .roll, .flicker, #cursor, .pic.reveal, .crt.booting .screen, .g-c { animation: none; }
+  .card.done .card-foot, .card-enter, .card-enter-cur { animation: none; }
   .apples .pic img { animation: none; transform: rotate(calc(var(--i) * 40deg)); }
 }

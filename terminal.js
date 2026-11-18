@@ -17,6 +17,7 @@
   const afterEl = $('after');
   const input = $('input');
   const gameHost = $('game');
+  const cardHost = $('card');
 
   // ---------------------------------------------------------------- storage
 
@@ -1129,7 +1130,7 @@
   }
 
   screen.addEventListener('click', (e) => {
-    if (!gameHost.hidden) return;
+    if (!gameHost.hidden || !cardHost.hidden) return;
     const entry = e.target.closest('[data-path]');
     if (entry) { typeAndRun(entryCommand(entry)); return; }
     const target = e.target.closest('[data-cmd]');
@@ -1141,10 +1142,10 @@
 
   // Typing anywhere goes to the terminal.
   document.addEventListener('keydown', (e) => {
-    if (document.activeElement !== input && !e.metaKey && !e.ctrlKey && !e.altKey && e.key.length === 1) focusInput();
+    if (cardHost.hidden && document.activeElement !== input && !e.metaKey && !e.ctrlKey && !e.altKey && e.key.length === 1) focusInput();
   });
 
-  if (window.visualViewport) visualViewport.addEventListener('resize', scrollBottom);
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (cardHost.hidden) scrollBottom(); });
 
   // ---------------------------------------------------------------- theme
 
@@ -1154,6 +1155,126 @@
     if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg-edge').trim() || '#050805';
   }
   setTheme(store.get('localStorage', 'retro:theme') || C.theme || 'green');
+
+  // ---------------------------------------------------------------- about card
+
+  function cardHTML(card) {
+    const link = (href, text) => {
+      const ext = /^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a href="${esc(href)}"${ext}>${esc(text)}</a>`;
+    };
+    const photo = card.photo
+      ? `<div class="card-photo"><div class="pic"><img src="${esc(card.photo)}" alt="${esc(card.name)}" decoding="async"></div></div>`
+      : '';
+    return `<article class="card">
+      <div class="card-bar">${esc(`${C.user}@${C.host}: ~/about.txt`)}</div>
+      <div class="card-body">${photo}<div class="card-head">` +
+        `<h1 data-ms="45">Hi, I'm <span class="hl">${esc(card.name)}</span></h1>` +
+        `<p class="dim">${esc(card.tagline)}</p></div>` +
+        `<div class="card-about">${card.about.map((p) => `<p>${esc(p)}</p>`).join('')}` +
+        `<dl>${(card.contacts || []).map((c) => `<dt class="dim">${esc(c.label)}</dt><dd>${link(c.href, c.text)}</dd>`).join('')}</dl></div>
+      </div>
+      <div class="card-foot">
+        <button type="button" class="card-enter">&gt; Enter the Terminal<span class="card-enter-cur"></span></button>
+        <span class="card-hint dim">or press Enter</span>
+      </div>
+    </article>`;
+  }
+
+  // Types out the text under `root`. Untyped text keeps its place but stays invisible, so the
+  // card has its final size from the first frame and nothing jumps. Aborting finishes at once.
+  function typewriter(root, signal) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) if (walker.currentNode.data.trim()) nodes.push(walker.currentNode);
+
+    const caret = document.createElement('span');
+    caret.className = 'tw-caret';
+    const parts = nodes.map((node) => {
+      const rest = document.createElement('span');
+      rest.className = 'tw-rest';
+      rest.textContent = node.data;
+      const ms = Number(node.parentElement.closest('[data-ms]')?.dataset.ms ?? 3);
+      const chars = [...node.data];
+      node.data = '';
+      node.after(rest);
+      return { node, rest, chars, ms };
+    });
+
+    let p = 0;
+    let i = 0;
+    let budget = 0;
+    let last = performance.now();
+    return new Promise((resolve) => {
+      const frame = (now) => {
+        budget = signal.aborted ? Infinity : budget + now - last;
+        last = now;
+        for (; p < parts.length; p++, i = 0) {
+          const part = parts[p];
+          while (i < part.chars.length && budget >= part.ms) { budget -= part.ms; i++; }
+          if (i < part.chars.length) break;
+          part.node.data = part.chars.join('');
+          part.rest.remove();
+        }
+        if (p === parts.length) { caret.remove(); resolve(); return; }
+        const part = parts[p];
+        part.node.data = part.chars.slice(0, i).join('');
+        caret.textContent = part.chars[i];
+        part.rest.textContent = part.chars.slice(i + 1).join('');
+        part.rest.before(caret);
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  // Shows the about card and resolves once the visitor asks for the terminal.
+  async function showCard() {
+    if (!C.card) return;
+    cardHost.innerHTML = cardHTML(C.card);
+    cardHost.hidden = false;
+    const card = cardHost.firstElementChild;
+
+    const pic = card.querySelector('.card-photo .pic');
+    if (pic) {
+      const img = pic.querySelector('img');
+      img.decode().then(() => pic.classList.add('reveal'), () => pic.parentElement.remove());
+    }
+
+    // Any key or tap finishes the typing.
+    const skip = new AbortController();
+    if (REDUCED_MOTION) skip.abort();
+    const skipper = () => skip.abort();
+    window.addEventListener('keydown', skipper);
+    screen.addEventListener('pointerdown', skipper);
+
+    if (!skip.signal.aborted) {
+      crt.classList.add('booting');
+      setTimeout(() => crt.classList.remove('booting'), 700);
+      await delay(380);
+    }
+    await typewriter(card.querySelector('.card-body'), skip.signal);
+    window.removeEventListener('keydown', skipper);
+    screen.removeEventListener('pointerdown', skipper);
+    card.classList.add('done');
+
+    let onKey;
+    await new Promise((resolve) => {
+      card.querySelector('.card-enter').addEventListener('click', resolve, { once: true });
+      onKey = (e) => { if (e.key === 'Enter' && !e.repeat && !e.target.closest('a, button')) resolve(); };
+      window.addEventListener('keydown', onKey);
+    });
+    window.removeEventListener('keydown', onKey);
+
+    // Collapse to a line; boot() then powers the screen back on into the shell.
+    if (!REDUCED_MOTION) {
+      crt.classList.add('powering-off');
+      await delay(280);
+      crt.classList.remove('powering-off');
+    }
+    cardHost.hidden = true;
+    cardHost.innerHTML = '';
+  }
 
   // ---------------------------------------------------------------- boot
 
@@ -1198,5 +1319,5 @@
     if (document.activeElement !== input) crt.classList.add('blurred');
   }
 
-  boot();
+  showCard().then(boot);
 })();
